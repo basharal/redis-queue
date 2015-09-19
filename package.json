@@ -1,0 +1,25 @@
+{
+  "name": "redis-queue",
+  "version": "0.1.0",
+  "description": "A reliabile queue using Redis",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "redis",
+    "queue",
+    "reliable",
+    "node"
+  ],
+  "author": "Bashar Al-Rawi <basharal@live.com>",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^2.10.0",
+    "redis": "^1.0.0"
+  },
+  "devDependencies": {
+    "chai": "^3.2.0",
+    "chai-as-promised": "^5.1.0"
+  }
+}
