@@ -1,6 +1,6 @@
 {
   "name": "reliable-redis-queue",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A reliabile queue using Redis",
   "main": "index.js",
   "scripts": {

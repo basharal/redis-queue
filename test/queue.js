@@ -23,7 +23,7 @@ describe('RedisQueue', function () {
         return client.delAsync(queueName)
           .then(function(){
             // let's make sure the working queue is empty too
-            return client.delAsync(Queue._workingQueueName(queueName));
+            return client.delAsync(Queue._workingQueue(queueName));
           })
           .then(function(){
             resolve();

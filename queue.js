@@ -31,17 +31,17 @@ module.exports = (function(global){
     this._queueName = queueName;
     // if we're dequeuing, then we will need the extra queues
     if (fn) {
-      this._workingQueueName = this._workingQueueName(queueName);
+      this._workingQueueName = Queue._workingQueue(queueName);
       this._callback = fn;
       this.on(processEvent, this._processLoop);
     }
   }
 
-  Queue.prototype.__proto__._workingQueueName = function _workingQueueName(name) {
+  Queue.prototype.__proto__ = events.EventEmitter.prototype;
+  Queue._workingQueue = function _workingQueue(name) {
     return name + '-working';
   }
 
-  Queue.prototype.__proto__ = events.EventEmitter.prototype;
 
   // `startDequeuing` starts processing the queue
   Queue.prototype.startDequeueingAsync = function startDequeueing() {
