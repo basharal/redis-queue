@@ -1,19 +1,19 @@
-Marionette Bootstrap Validate Behavior
-======================================
+Redis Queue for Node
+====================
 
 This library provides a Node module for a reliable queue for Redis where
 each value is guaranteed to be processed *at least once* even in case of failures. 
 The only constraint is that there should be ONLY a single consumer for the queue.
 The library relies heavily on [Promises](https://github.com/petkaantonov/bluebird).
 Therefore, it expects the given redis client to support promises.
-The code is fully [annotated](https://github.com/basharal/redis-queue/docs/queue.html).
+The code is fully annotated.
 
-## installation
+## Installation
 ```
 npm install redis-queue
 ```
 
-## usage
+## Usage
 
     var Promise = require('bluebird');
     var redis = Promise.promisifyAll(require('redis'));
