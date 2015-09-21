@@ -12,9 +12,9 @@ describe('RedisQueue', function () {
   var client;
   var queueName = 'test-reliable-queue';
   var values = ['test', 'me', 'please'];
+  var redisUrl = 'redis://localhost:6379';
 
   before(function before() {
-    var redisUrl = 'redis://localhost:6379';
     client = redis.createClient(redisUrl);
 
     return new Promise(function(resolve, reject){
@@ -42,7 +42,7 @@ describe('RedisQueue', function () {
   });
 
   it('should enqueue values', function () {
-    var queue = new Queue(client, queueName);
+    var queue = new Queue(redisUrl, queueName);
 
     return Promise.settle(Promise.map(values, function(value){
       return queue.enqueueAsync(value);
@@ -87,7 +87,7 @@ describe('RedisQueue', function () {
       return Promise.resolve();
     }
 
-    var queue = new Queue(client, queueName, callback);
+    var queue = new Queue(redisUrl, queueName, callback);
     queue.startDequeueingAsync();
   })
 

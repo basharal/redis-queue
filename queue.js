@@ -3,7 +3,9 @@ module.exports = (function(global){
 
   var Promise = require('bluebird');
   var events = require('events');
+  var _ = require('underscore');
   var processEvent = 'process-queue';
+  var redis = Promise.promisifyAll(require('redis'));
 
   // A Reliable-Queue for Redis
   // ==========================
@@ -19,19 +21,17 @@ module.exports = (function(global){
   // -------------
   // `Queue` represents a reliable-redis queue
   //
-  // `client` is the redis client that is already connected
-  // to the redis instance. The client must be created with *`Bluebird`*
-  // promises. The main reason for passing the client and not the url is
-  // to avoid creating a new connection to the database.
+  // `url` is the url for the redis instance.
   // `queueName` represents a redis `LIST`
   // `fn` represents the callback that will be called once for
   // each value in the queue
-  function Queue(client, queueName, fn) {
-    this._client = client;
+  function Queue(url, queueName, fn) {
+    this._client = redis.createClient(url);
     this._queueName = queueName;
     // if we're dequeuing, then we will need the extra queues
     if (fn) {
       this._workingQueueName = Queue._workingQueue(queueName);
+      this._errorQueueName = Queue._errorQueue(queueName);
       this._callback = fn;
       this.on(processEvent, this._processLoop);
     }
@@ -40,6 +40,9 @@ module.exports = (function(global){
   Queue.prototype.__proto__ = events.EventEmitter.prototype;
   Queue._workingQueue = function _workingQueue(name) {
     return name + '-working';
+  }
+  Queue._errorQueue = function _errorQueue(name) {
+    return name + '-error';
   }
 
 
@@ -59,15 +62,20 @@ module.exports = (function(global){
     // run in the middle of a crash.
     // We could have inserted, then deleted, but if the code crashes
     // then we could double insert. This is safer, but less-performant.
-    return this._client.lrangeAsync(this._workingQueueName, 0, -1)
-      .then(function(values){
-        return Promise.settle(Promise.map(values, function(value){
-          // put the value back. The order should be maintained, since all
-          // we're doing is moving values from the head of one queue to the tail
-          // of another
-          return lpoprpushAsync(self._workingQueueName, self._queueName);
-        }))
-      })
+    var tempQueues = [this._workingQueueName, this._errorQueueName];
+    var promises = _.map(tempQueues, function(queueName) {
+      return self._client.lrangeAsync(queueName, 0, -1)
+        .then(function (values) {
+          return Promise.settle(Promise.map(values, function (value) {
+            // put the value back. The order should be maintained, since all
+            // we're doing is moving values from the head of one queue to the tail
+            // of another
+            return self._client.rpoplpushAsync(queueName, self._queueName);
+          }));
+        });
+    });
+
+    return Promise.settle(promises)
       .then(function(){
         self._started = true;
         self.emit(processEvent);
@@ -160,8 +168,9 @@ module.exports = (function(global){
     }
 
     var self = this;
-    // put the value back in the original queue for processing again
-    return this._client.lpoprpushAsync(this._workingQueueName, this._queueName)
+    // to avoid infinite loops with errors. Let's put the failing values into an
+    // error queue to avoid loops
+    return this._client.rpoplpushAsync(this._workingQueueName, this._errorQueueName)
       .then(function(storedValue){
         if (storedValue !== value) {
           throw new Error('unexpected! values must match: '
